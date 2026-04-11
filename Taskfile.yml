@@ -1,0 +1,51 @@
+# ./Taskfile.yaml
+# See: https://taskfile.dev/api/
+
+version: "3"
+
+dotenv:
+  - .env
+
+tasks:
+  default:
+    desc: "Show list of commands"
+    cmds:
+      - task --list
+
+  proto:
+    desc: "Generate Go code from .proto files"
+    cmds:
+      - |
+        protoc \
+          --go_out=gen \
+          --go_opt=paths=source_relative \
+          --go-grpc_out=gen \
+          --go-grpc_opt=paths=source_relative \
+          --proto_path=proto \
+          proto/auth/auth.proto \
+          proto/catalog/catalog.proto \
+          proto/order/order.proto \
+          proto/inventory/inventory.proto
+    dir: "{{.TASKFILE_DIR}}"
+    sources:
+      - proto/**/*.proto
+    generates:
+      - gen/**/*.go
+
+  migrate:auth:
+    desc: "Apply auth-service migrations"
+    cmds:
+      - goose -dir services/auth-service/migrations postgres "postgres://{{.DB_USER}}:{{.DB_PASSWORD}}@localhost:{{.AUTH_DB_PORT}}/{{.AUTH_DB_NAME}}?sslmode=disable" up
+
+  migrate:catalog:
+    desc: "Apply catalog-service migrations"
+    cmds:
+      - goose -dir services/catalog-service/migrations postgres "postgres://{{.DB_USER}}:{{.DB_PASSWORD}}@{{.DB_HOST}}:{{.CATALOG_DB_PORT}}/{{.CATALOG_DB_NAME}}?sslmode=disable" up
+  migrate:order:
+    desc: "Apply order-service migrations"
+    cmds:
+      - goose -dir services/order-service/migrations postgres "postgres://{{.DB_USER}}:{{.DB_PASSWORD}}@{{.DB_HOST}}:{{.ORDER_DB_PORT}}/{{.ORDER_DB_NAME}}?sslmode=disable" up
+  migrate:inventory:
+    desc: "Apply inventory-service migrations"
+    cmds:
+      - goose -dir services/inventory-service/migrations postgres "postgres://{{.DB_USER}}:{{.DB_PASSWORD}}@{{.DB_HOST}}:{{.INVENTORY_DB_PORT}}/{{.INVENTORY_DB_NAME}}?sslmode=disable" up
